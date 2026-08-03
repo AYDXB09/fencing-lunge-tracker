@@ -48,6 +48,7 @@ export interface FrameMetrics {
   footLift: number;
   hipSpeed: number;
   confidence: number;
+  egReady: boolean;
 }
 
 interface Smoothed {
@@ -63,17 +64,18 @@ const RIGHT = 'right_';
 
 const EG_HOLD = 5;
 const RECOVERY_HOLD = 4;
-const ONSET_VEL = 0.6;
+const ONSET_VEL = 0.55;
+const ONSET_DELTA = 0.2;
 const ONSET_FRAMES = 2;
 const RECOVERY_FRAMES = 3;
 const LUNGE_TIMEOUT_MS = 4200;
-const MIN_PEAK_STANCE = 1.25;
-const MIN_HIP_TRAVEL = 0.28;
+const MIN_PEAK_STANCE = 1.15;
+const MIN_HIP_TRAVEL = 0.22;
 const MIN_DURATION = 120;
 const MAX_DURATION = 3000;
 const BACK_DRIFT_LIMIT = 0.52;
 const CANCEL_DRIFT = 0.6;
-const POS = 0.3;
+const POS = 0.25;
 
 function angle(A: Keypoint, B: Keypoint, C: Keypoint): number {
   const ab = Math.hypot(B.x - A.x, B.y - A.y);
@@ -124,6 +126,7 @@ export class LungeAnalyzer {
   private frontVelX = 0;
   private hipVelX = 0;
   private stance = 0;
+  private win: number[] = [];
   private a = { frontKnee: 0, backLeg: 0, frontArm: 0, backArm: 0, lean: 0 };
 
   private egHolds = 0;
@@ -197,6 +200,7 @@ export class LungeAnalyzer {
       footLift: 0,
       hipSpeed: 0,
       confidence: 0,
+      egReady: false,
     };
   }
 
@@ -214,9 +218,9 @@ export class LungeAnalyzer {
       !!r[RIGHT + 'hip'];
 
     if (!hasPose || !r || !ts) {
-      this.egHolds = 0;
-      this.recoveryHolds = 0;
-      this.armExtended = false;
+      // a dropped/noisy frame must not undo progress: decay, don't hard-reset
+      this.egHolds = Math.max(0, this.egHolds - 2);
+      this.recoveryHolds = Math.max(0, this.recoveryHolds - 2);
       this.lastFrame.hasPose = false;
       return this.lastFrame;
     }
@@ -282,6 +286,9 @@ export class LungeAnalyzer {
     this.frontAnkleS = lerp(prevF, tF, 0.4);
     this.frontVelX = lerp(this.frontVelX, (this.frontAnkleS - prevF) / dt, 0.4);
 
+    this.win.push(this.frontAnkleS);
+    if (this.win.length > 4) this.win.shift();
+
     const hipCurrent = fwd(hipMid) / this.scale;
     const hv = this.prevHipS === null ? 0 : (hipCurrent - this.prevHipS) / dt;
     this.prevHipS = hipCurrent;
@@ -312,7 +319,7 @@ export class LungeAnalyzer {
   }
 
   private enGardeOk(stance: number, a: { frontKnee: number; backLeg: number }): boolean {
-    return stance >= 0.8 && stance <= 2.7 && a.frontKnee <= 160 && a.backLeg <= 160;
+    return stance >= 0.75 && stance <= 3.0 && a.frontKnee <= 170 && a.backLeg <= 174;
   }
 
   private tick() {
@@ -320,8 +327,8 @@ export class LungeAnalyzer {
     const a = this.a;
     switch (this.phase) {
       case 'idle':
-        if (this.enGardeOk(stance, a)) this.egHolds += 1;
-        else this.egHolds = 0;
+        if (this.enGardeOk(stance, a)) this.egHolds = Math.min(this.egHolds + 1, EG_HOLD);
+        else this.egHolds = Math.max(0, this.egHolds - 2);
         if (this.egHolds >= EG_HOLD) this.enterEnGarde();
         break;
 
@@ -343,8 +350,10 @@ export class LungeAnalyzer {
         {
           const ba = this.sm[(this.backSide === 'left' ? LEFT : RIGHT) + 'ankle'];
           const backDrift = ba ? Math.abs((ba.x * this.faceDir - this.base.backAnkleFwd) / this.scale) : 0;
-          if (this.frontVelX > ONSET_VEL && backDrift < BACK_DRIFT_LIMIT) this.onsetFrames += 1;
-          else if (this.frontVelX < 0.2) this.onsetFrames = 0;
+          const winDelta = this.win.length >= 2 ? this.frontAnkleS - this.win[0] : 0;
+          const drives = this.frontVelX > ONSET_VEL || winDelta > ONSET_DELTA;
+          if (drives && backDrift < BACK_DRIFT_LIMIT) this.onsetFrames += 1;
+          else if (this.frontVelX < 0.1) this.onsetFrames = 0;
           if (this.onsetFrames >= ONSET_FRAMES) this.beginRun();
         }
         break;
@@ -354,8 +363,8 @@ export class LungeAnalyzer {
         break;
 
       case 'recovering':
-        if (this.enGardeOk(stance, a)) this.recoveryHolds += 1;
-        else this.recoveryHolds = 0;
+        if (this.enGardeOk(stance, a)) this.recoveryHolds = Math.min(this.recoveryHolds + 1, RECOVERY_HOLD);
+        else this.recoveryHolds = Math.max(0, this.recoveryHolds - 2);
         if (this.recoveryHolds >= RECOVERY_HOLD) {
           this.recoveryHolds = 0;
           this.enterEnGarde();
@@ -627,6 +636,7 @@ export class LungeAnalyzer {
       footLift,
       hipSpeed: this.hipVelX,
       confidence: this.scale > 0 ? 1 : 0,
+      egReady: this.enGardeOk(this.stance, this.a),
     };
   }
 }

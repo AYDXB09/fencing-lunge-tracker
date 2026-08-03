@@ -52,7 +52,7 @@ export function Stat({
     steel: 'text-steel-100',
   };
   return (
-    <div className="rounded-xl border border-line-soft bg-ink-900/60 p-4">
+    <div className="u-card p-4">
       <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-steel-500">{label}</p>
       <div className="mt-2 flex items-baseline gap-1.5">
         <span className={cn('font-display text-3xl font-light tabular-nums', palette[accent])}>
@@ -109,7 +109,7 @@ function Cue({ type }: { type: string }) {
 
 export function FeedbackPanel({ event }: { event?: LungeEvent | null }) {
   return (
-    <div className="rounded-xl border border-line-soft bg-ink-900/60 p-5">
+    <div className="u-card p-5">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.28em] text-steel-400">
           <Check className="h-4 w-4 text-brass-400" />
@@ -133,7 +133,7 @@ export function FeedbackPanel({ event }: { event?: LungeEvent | null }) {
             {event.feedbacks.map((f) => (
               <li
                 key={f.id}
-                className="flex items-start gap-3 rounded-lg border border-line-soft bg-ink-950/40 px-3 py-2.5"
+                className="flex items-start gap-3 rounded-[2px] border border-line bg-ink-950 px-3 py-2.5"
               >
                 <div className="mt-0.5">
                   <Cue type={f.type} />
@@ -164,7 +164,7 @@ export function HistoryPanel({ events }: { events: LungeEvent[] }) {
   const unit = events.some((e) => e.speedMs !== null) ? 'm/s' : 'T/s';
 
   return (
-    <div className="rounded-xl border border-line-soft bg-ink-900/60 p-5">
+    <div className="u-card p-5">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.28em] text-steel-500">
           <Swords className="h-4 w-4 text-brass-400" />
@@ -183,7 +183,7 @@ export function HistoryPanel({ events }: { events: LungeEvent[] }) {
           {events.slice(0, 8).map((e, i) => (
             <li
               key={e.id}
-              className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-ink-800/50"
+              className="flex items-center gap-3 rounded-[2px] px-2 py-1.5 transition-colors hover:bg-ink-800/50"
             >
               <span className="w-5 font-mono text-[10px] text-steel-600">#{events.length - i}</span>
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: scoreColor(e.score) }} />
@@ -217,7 +217,7 @@ export function PhaseChip({ phase }: { phase: Phase }) {
   };
   const m = map[phase];
   return (
-    <div className={cn('flex items-center gap-2.5 rounded-full border bg-ink-900/70 px-3.5 py-1.5', m.ring)}>
+    <div className={cn('flex items-center gap-2.5 rounded-[2px] border bg-ink-900 px-3.5 py-1.5', m.ring)}>
       <span className="relative flex h-2 w-2">
         <span className={cn('absolute inline-flex h-full w-full animate-pulse-glow rounded-full opacity-70', m.lamp)} />
         <span className={cn('relative inline-flex h-2 w-2 rounded-full', m.lamp)} />

@@ -72,7 +72,38 @@ function feed(a: LungeAnalyzer, p: J[], t: number): number {
   return t + 33;
 }
 
-function cleanLunges(): number {
+const rng = (seed: number) => () => {
+  seed = (seed * 1664525 + 1013904223) >>> 0;
+  return seed / 4294967296;
+};
+
+// real camera noise: positional jitter + occasional non-critical joint dips + rare blank frames
+const CRITICAL = new Set([
+  'nose',
+  'left_ankle',
+  'right_ankle',
+  'left_shoulder',
+  'right_shoulder',
+  'left_hip',
+  'right_hip',
+]);
+function jit(p: J[], amp: number, dip: number, r: () => number): J[] {
+  const out = p.map((j) => {
+    let score = j.score;
+    if (!CRITICAL.has(j.name as string)) score = r() < dip ? 0.12 : score;
+    return {
+      ...j,
+      x: j.x + (r() - 0.5) * 2 * amp,
+      y: j.y + (r() - 0.5) * 2 * amp,
+      score,
+    };
+  });
+  if (r() < 0.04) return out.map((j) => ({ ...j, score: 0.05 }));
+  return out;
+}
+
+function cleanLunges({ noisy = false } = {}): number {
+  const r = rng(12347);
   const evs: LungeEvent[] = [];
   const phases: Phase[] = [];
   let last: Phase | null = null;
@@ -88,25 +119,27 @@ function cleanLunges(): number {
   a.setUserHeightCm(175);
   let t = 0;
   const hold = (p: J[], n: number) => {
-    for (let i = 0; i < n; i++) t = feed(a, p, t);
+    for (let i = 0; i < n; i++) t = feed(a, noisy ? jit(p, 0.04, 0.12, r) : p, t);
+  };
+  const move = (from: J[], to: J[], n: number) => {
+    for (let i = 0; i <= n; i++) t = feed(a, noisy ? jit(joints(from, to, i / n), 0.04, 0.12, r) : joints(from, to, i / n), t);
   };
   hold(enGarde, 12);
-  for (let i = 0; i <= 6; i++) t = feed(a, joints(enGarde, lungePeak, i / 6), t);
+  move(enGarde, lungePeak, 6);
   hold(lungePeak, 12);
-  for (let i = 0; i <= 8; i++) t = feed(a, joints(lungePeak, enGarde, i / 8), t);
+  move(lungePeak, enGarde, 8);
   hold(enGarde, 16);
-  for (let i = 0; i <= 6; i++) t = feed(a, joints(enGarde, lungePeak, i / 6), t);
+  move(enGarde, lungePeak, 6);
   hold(lungePeak, 12);
-  for (let i = 0; i <= 8; i++) t = feed(a, joints(lungePeak, enGarde, i / 8), t);
+  move(lungePeak, enGarde, 8);
   hold(enGarde, 12);
 
-  console.log('=== clean lunge x2 ===');
+  console.log(`\n=== clean lunge x2 ${noisy ? '(WITH noise & dropped frames)' : '(clean)'} ===`);
   console.log('phases:', phases.join(' -> '));
   evs.forEach((e, i) =>
     console.log(
       `  #${i + 1} dur=${e.durationMs}ms hip=${e.hipTravel.toFixed(2)}T stance=${e.peakStance.toFixed(2)} ` +
         `backLeg=${e.backLegAngle.toFixed(0)} frontKnee=${e.frontKneeAngle.toFixed(0)} arm=${e.armTimingMs} ` +
-        `lift=${e.footLift.toFixed(2)} swing=${e.backArmSwing.toFixed(2)} kneeOverToe=${e.kneeOverToe.toFixed(2)} ` +
         `speed=${e.speed.toFixed(2)}T/s speedMs=${e.speedMs?.toFixed(2) ?? 'n/a'} score=${e.score} ` +
         `bad=${e.feedbacks.filter((f) => f.type === 'bad').length}`,
     ),
@@ -163,7 +196,8 @@ function holdsEnGarde(): boolean {
 }
 
 const c1 = cleanLunges();
+const c1n = cleanLunges({ noisy: true });
 const c2 = walkStep();
 const c3 = holdsEnGarde();
-console.log(`\nRESULT  clean-lunges=${c1} (expect 2) walkStep=${c2} (expect 0) hold=${c3} (expect true)`);
-console.log(c1 >= 2 && c2 === 0 && c3 ? '\nALL PASS' : '\nSOMETHING FAILED');
+console.log(`\nRESULT  clean=${c1} noisy=${c1n} (expect 2) walkStep=${c2} (expect 0) hold=${c3} (expect true)`);
+console.log(c1 >= 2 && c1n >= 2 && c2 === 0 && c3 ? '\nALL PASS' : '\nSOMETHING FAILED');

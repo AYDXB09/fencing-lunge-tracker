@@ -69,13 +69,13 @@ export default function App() {
 
   return (
     <div className="grain min-h-screen bg-piste text-steel-100">
-      <header className="sticky top-0 z-40 border-b border-line-soft bg-ink-950/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line-soft bg-ink-950">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <div className="flex items-center gap-3">
             <EpeeMark />
             <div className="leading-none">
-              <div className="font-display text-lg font-light italic tracking-tight text-steel-100">Lunge Lab</div>
-              <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.42em] text-brass-500">Épée analyzer</div>
+              <div className="font-display text-lg font-light italic tracking-tight text-steel-100">Épée Lunge Tracker</div>
+              <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.42em] text-brass-500">form · speed · footwork</div>
             </div>
           </div>
 
@@ -86,7 +86,7 @@ export default function App() {
               onClick={() => setMirrored((m) => !m)}
               title="Mirror the camera view"
               className={cn(
-                'grid h-9 w-9 place-items-center rounded-lg border transition-colors',
+                'grid h-9 w-9 place-items-center rounded-[2px] border transition-colors',
                 mirrored ? 'border-brass-400/50 text-brass-300' : 'border-line text-steel-500 hover:text-steel-300',
               )}
             >
@@ -97,7 +97,7 @@ export default function App() {
               onClick={() => setSettingsOpen((o) => !o)}
               title="Body height for speed estimation"
               className={cn(
-                'flex h-9 items-center gap-2 rounded-lg border px-3 font-mono text-[11px] tracking-wide transition-colors',
+                'flex h-9 items-center gap-2 rounded-[2px] border px-3 font-mono text-[11px] tracking-wide transition-colors',
                 settingsOpen ? 'border-brass-400/50 text-brass-300' : 'border-line text-steel-400 hover:text-steel-200',
               )}
             >
@@ -108,7 +108,7 @@ export default function App() {
             <button
               onClick={reset}
               title="Reset session"
-              className="flex h-9 items-center gap-2 rounded-lg border border-line px-3 font-mono text-[11px] uppercase tracking-wider text-steel-400 transition-colors hover:border-ember-400/50 hover:text-ember-400"
+              className="flex h-9 items-center gap-2 rounded-[2px] border border-line px-3 font-mono text-[11px] uppercase tracking-wider text-steel-400 transition-colors hover:border-ember-400/50 hover:text-ember-400"
             >
               <RotateCcw className="h-4 w-4" />
               Reset
@@ -117,7 +117,7 @@ export default function App() {
         </div>
 
         {settingsOpen && (
-          <div className="border-t border-line-soft bg-ink-900/80 backdrop-blur-md">
+          <div className="border-t border-line-soft bg-ink-900">
             <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-steel-500">Your height</span>
@@ -142,7 +142,7 @@ export default function App() {
       <main className="mx-auto max-w-6xl px-5 py-7">
         {stats.count === 0 && last === null && (
           <div className="mb-5 flex items-center justify-center">
-            <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 rounded-full border border-line-soft bg-ink-900/50 px-6 py-2.5">
+            <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 rounded-[2px] border border-line bg-ink-900 px-6 py-2.5">
               <Step n="01" label="find en garde" />
               <span className="text-steel-700">·</span>
               <Step n="02" label="lunge & hold" />
@@ -154,7 +154,7 @@ export default function App() {
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <div className="rounded-xl border border-line-soft bg-ink-900/40 p-3">
+            <div className="u-card p-3">
               <CameraView
                 mirrored={mirrored}
                 userHeightCm={heightCm}
@@ -196,9 +196,7 @@ export default function App() {
         </div>
 
         <footer className="mt-10 border-t border-line-soft pt-6 pb-8 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-steel-600">
-            MoveNet Thunder · on-device inference · nothing leaves your browser
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-steel-600">Épée lunge tracker</p>
         </footer>
       </main>
     </div>

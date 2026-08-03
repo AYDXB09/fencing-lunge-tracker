@@ -144,8 +144,8 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
 
   return (
     <div className="relative">
-      <div className="relative aspect-[4/3] md:aspect-video overflow-hidden rounded-xl border border-line-soft bg-ink-950 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]">
-        <div className="absolute inset-0 vignette pointer-events-none" />
+      <div className="relative aspect-[4/3] md:aspect-video overflow-hidden rounded-[2px] border border-line bg-ink-950">
+        <div className="absolute inset-0 pointer-events-none" />
 
         <div className="absolute inset-0" style={{ transform: mirrored ? 'scaleX(-1)' : 'none' }}>
           <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
@@ -179,7 +179,7 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
             <p className="max-w-sm text-sm text-steel-300">{errorText}</p>
             <button
               onClick={retry}
-              className="mt-1 inline-flex items-center gap-2 rounded-md border border-line bg-ink-800 px-4 py-2 text-sm text-steel-100 transition-colors hover:border-brass-400/50 hover:text-brass-300"
+              className="mt-1 inline-flex items-center gap-2 rounded-[2px] border border-line bg-ink-800 px-4 py-2 text-sm text-steel-100 transition-colors hover:border-brass-400/50 hover:text-brass-300"
             >
               <RefreshCcw className="h-4 w-4" />
               Retry
@@ -189,7 +189,7 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
 
         {status === 'ready' && stageHint === 'none' && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            <div className="rounded-lg border border-line bg-ink-950/70 px-4 py-2 text-center backdrop-blur-sm">
+            <div className="rounded-[2px] border border-line bg-ink-950 px-4 py-2 text-center">
               <p className="text-xs text-steel-300">Step into frame — full body, head to toe</p>
             </div>
           </div>
@@ -203,7 +203,6 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-steel-300">Cam</span>
         </div>
 
-        <div className="scanline" />
       </div>
 
       <TelemetryStrip metrics={telemetry} />
@@ -239,9 +238,9 @@ function Gauge({
           {value === null ? '–' : `${format(value)}${unit}`}
         </span>
       </div>
-      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-ink-800">
+      <div className="mt-1.5 h-1 overflow-hidden rounded-[2px] bg-ink-800">
         <div
-          className="h-full rounded-full animate-meter transition-colors"
+          className="h-full rounded-[2px] animate-meter transition-colors"
           style={{ width: `${pct}%`, backgroundColor: gaugeColor(pct, (goodAt / max) * 100), transitionProperty: 'width, background-color' }}
         />
       </div>
@@ -251,7 +250,7 @@ function Gauge({
 
 function TelemetryStrip({ metrics }: { metrics: FrameMetrics | null }) {
   return (
-    <div className="mt-3 rounded-xl border border-line-soft bg-ink-900/70 px-4 py-3">
+    <div className="u-card px-4 py-3">
       <div className="flex items-center justify-between pb-2.5">
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-steel-500">
           <Activity className="h-3.5 w-3.5 text-brass-400" />
