@@ -289,19 +289,7 @@ export function KeyMetrics({ events }: { events: LungeEvent[] }) {
   );
 }
 
-/* ---------------------------------- weapon select ---------------------------------- */
-
-export function WeaponSelect() {
-  return (
-    <button className="flex w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-accent/50">
-      <Swords className="h-4 w-4 text-accent-bright" />
-      <span className="mono text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Épée</span>
-      <ChevronDown className="ml-auto h-4 w-4 text-dim" />
-    </button>
-  );
-}
-
-/* ---------------------------------- recent lunges table ---------------------------------- */
+/* ---------------------------------- controls ---------------------------------- */
 
 function ResultBadge({ score }: { score: number }) {
   const band = RESULT_BAND[classify(score)];
@@ -519,55 +507,84 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 export function Insights({ events }: { events: LungeEvent[] }) {
   const n = events.length;
-  const avgExt = n ? events.reduce((a, e) => a + extensionOf(e), 0) / n : 0;
-  const sk = skills(events);
-  const rec = sk[4].value;
+  const empty = (
+    <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-line bg-surface-2/40">
+      <p className="text-xs text-dim">No insights yet — complete a few lunges</p>
+    </div>
+  );
+  if (n === 0) {
+    return (
+      <Card title="Insights">
+        {empty}
+      </Card>
+    );
+  }
 
-  const items = [
-    {
+  const avgExt = events.reduce((a, e) => a + extensionOf(e), 0) / n;
+  const rec = skills(events)[4].value;
+  const items: { icon: React.ReactNode; color: string; title: string; sub: string }[] = [];
+
+  if (avgExt >= 85) {
+    items.push({
       icon: <ArrowUpRight className="h-3.5 w-3.5" />,
       color: '#22c55e',
       title: 'Great extension!',
-      sub: avgExt >= 85 ? 'You are maintaining excellent full arm extension.' : 'Complete a lunge to unlock insights.',
-    },
-    {
+      sub: 'Excellent full arm extension through the lunge.',
+    });
+  }
+  if (rec > 0 && rec < 85) {
+    items.push({
       icon: <Footprints className="h-3.5 w-3.5" />,
       color: '#2563eb',
       title: 'Work on recovery time',
-      sub: rec > 0 && rec < 85 ? 'Try to recover your back foot a bit faster.' : 'Recovery metrics appear once lunges are logged.',
-    },
-    {
-      icon: <TrendingUp className="h-3.5 w-3.5" />,
-      color: '#a855f7',
-      title: 'Speed is improving',
-      sub: n > 1 ? 'Your average speed is trending up this session.' : 'Your trends will build up as you lunge.',
-    },
-  ];
+      sub: 'Try to recover your back foot a bit faster.',
+    });
+  }
+  const ordered = [...events].sort((a, b) => a.ts - b.ts);
+  if (ordered.length >= 3) {
+    const half = Math.floor(ordered.length / 2);
+    const a = ordered.slice(0, half).map(speedOf).filter((s): s is number => s !== null);
+    const b = ordered.slice(half).map(speedOf).filter((s): s is number => s !== null);
+    const ma = a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+    const mb = b.length ? b.reduce((x, y) => x + y, 0) / b.length : 0;
+    if (ma > 0 && mb > ma * 1.02) {
+      items.push({
+        icon: <TrendingUp className="h-3.5 w-3.5" />,
+        color: '#a855f7',
+        title: 'Speed is improving',
+        sub: `Average speed up ${Math.round((mb / ma - 1) * 100)}% this session.`,
+      });
+    }
+  }
 
   return (
     <Card title="Insights">
-      <div className="space-y-2">
-        {items.map((it, i) => (
-          <motion.div
-            key={it.title}
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + i * 0.08 }}
-            className="flex items-start gap-3 rounded-lg border border-line bg-surface-2 p-3"
-          >
-            <span
-              className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-white"
-              style={{ backgroundColor: it.color }}
+      {items.length === 0 ? (
+        empty
+      ) : (
+        <div className="space-y-2">
+          {items.map((it, i) => (
+            <motion.div
+              key={it.title}
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + i * 0.08 }}
+              className="flex items-start gap-3 rounded-lg border border-line bg-surface-2 p-3"
             >
-              {it.icon}
-            </span>
-            <div>
-              <p className="text-[13px] font-semibold text-primary">{it.title}</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-muted">{it.sub}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <span
+                className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-white"
+                style={{ backgroundColor: it.color }}
+              >
+                {it.icon}
+              </span>
+              <div>
+                <p className="text-[13px] font-semibold text-primary">{it.title}</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-muted">{it.sub}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </Card>
   );
 }
@@ -577,8 +594,6 @@ export function Insights({ events }: { events: LungeEvent[] }) {
 export function Scrubber({ events }: { events: LungeEvent[] }) {
   const [playing, setPlaying] = useState(false);
   const dots = events.slice(-48).map((e) => classify(e.score));
-  const pool: (keyof typeof RESULT_BAND)[] = [];
-  for (let i = dots.length; i < 40; i++) pool.push(i % 5 === 1 ? 'noTouch' : i % 11 === 3 ? 'invalid' : 'touch');
 
   return (
     <div className="mt-2.5 rounded-lg border border-line bg-surface-2 px-3 py-2.5">
@@ -591,19 +606,26 @@ export function Scrubber({ events }: { events: LungeEvent[] }) {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setPlaying((p) => !p)}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white transition-transform hover:scale-105 active:scale-95"
+          disabled={dots.length === 0}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:scale-100"
           title={playing ? 'Pause' : 'Play'}
         >
           {playing ? <Square className="h-3 w-3 fill-current" /> : <Play className="ml-0.5 h-3.5 w-3.5 fill-current" />}
         </button>
         <div className="relative flex h-2 flex-1 items-center overflow-hidden rounded-full bg-surface">
-          {[...dots, ...pool].slice(0, 48).map((k, i) => (
-            <span
-              key={i}
-              className="animate-dot h-2 flex-1"
-              style={{ backgroundColor: RESULT_BAND[k].color, opacity: i < dots.length ? 1 : 0.18 }}
-            />
-          ))}
+          {dots.length === 0 ? (
+            <span className="mono absolute inset-0 flex items-center justify-center text-[9px] uppercase tracking-[0.18em] text-dim">
+              No lunges yet
+            </span>
+          ) : (
+            dots.map((k, i) => (
+              <span
+                key={i}
+                className="animate-dot h-2 flex-1"
+                style={{ backgroundColor: RESULT_BAND[k].color, opacity: i < dots.length ? 1 : 0.18 }}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -620,17 +642,17 @@ export function Controls({
   onEndSession: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 pb-4">
+    <div className="flex items-center gap-3">
       <button
         onClick={onNewSession}
-        className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-muted transition-colors hover:border-accent/50 hover:text-primary"
+        className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-4 text-[13px] font-medium text-muted transition-colors hover:border-accent/50 hover:text-primary"
       >
         <RotateCcw className="h-4 w-4" />
         New Session
       </button>
       <button
         onClick={onEndSession}
-        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-colors hover:bg-accent-bright"
+        className="flex h-9 items-center gap-2 rounded-lg bg-accent px-4 text-[13px] font-semibold text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-colors hover:bg-accent-bright"
       >
         <Square className="h-3.5 w-3.5 fill-current" />
         End Session

@@ -4,7 +4,6 @@ import {
   SessionSummary,
   ConsistencyChart,
   KeyMetrics,
-  WeaponSelect,
   RecentLunges,
   PerformanceScore,
   QualityChart,
@@ -14,27 +13,6 @@ import {
 } from './components/Dashboard';
 import type { LungeEvent, Phase, FrameMetrics } from './lib/LungeAnalyzer';
 import { fmtClock } from './lib/session';
-import { Bluetooth } from 'lucide-react';
-
-function FencerMark() {
-  return (
-    <svg viewBox="0 0 40 40" className="h-9 w-9" fill="none" aria-hidden>
-      <circle cx="20" cy="20" r="19" stroke="#2563eb" strokeOpacity="0.35" />
-      {/* head */}
-      <circle cx="24" cy="9" r="2.2" fill="#fff" />
-      {/* arm out toward target (extended forward) */}
-      <path d="M24 12 L31 8" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-      {/* weapon */}
-      <path d="M31 8 L37 5" stroke="#22c55e" strokeWidth="1.2" strokeLinecap="round" />
-      {/* torso leaning into lunge */}
-      <path d="M22 13 L18 21" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-      {/* front leg bent forward */}
-      <path d="M18 21 L21 25 M21 25 L19 33" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-      {/* back leg extended behind */}
-      <path d="M18 21 L9 23 M9 23 L7 33" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function App() {
   const [history, setHistory] = useState<LungeEvent[]>([]);
@@ -84,12 +62,9 @@ export default function App() {
     <div className="flex h-screen w-full flex-col overflow-hidden bg-bg text-primary">
       {/* ------------------------------ header ------------------------------ */}
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-line px-6">
-        <div className="flex items-center gap-3">
-          <FencerMark />
-          <div className="leading-none">
-            <div className="text-[15px] font-bold uppercase tracking-[0.08em] text-primary">Fencing</div>
-            <div className="mono mt-0.5 text-[10px] uppercase tracking-[0.3em] text-muted">Lunge Tracker</div>
-          </div>
+        <div className="leading-none">
+          <div className="text-[15px] font-bold uppercase tracking-[0.08em] text-primary">Fencing</div>
+          <div className="mono mt-0.5 text-[10px] uppercase tracking-[0.3em] text-muted">Lunge Tracker</div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -102,22 +77,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5">
-            <Bluetooth className="h-4 w-4 text-accent-bright" />
-            <span className="mono text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Connected</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-success animate-live-pulse" />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right leading-none">
-              <div className="text-[13px] font-semibold text-primary">Anvith Y.</div>
-              <div className="mono mt-0.5 text-[9px] uppercase tracking-[0.2em] text-muted">Épée Fencer</div>
-            </div>
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-[13px] font-bold text-white">
-              AY
-            </div>
-          </div>
-        </div>
+        <Controls onNewSession={newSession} onEndSession={endSession} />
       </header>
 
       {/* ------------------------------ dashboard ------------------------------ */}
@@ -127,7 +87,6 @@ export default function App() {
           <SessionSummary events={history} />
           <ConsistencyChart events={history} elapsedSec={elapsed} />
           <KeyMetrics events={history} />
-          <WeaponSelect />
         </aside>
 
         {/* center */}
@@ -166,9 +125,6 @@ export default function App() {
           <PerformanceScore events={history} />
           <QualityChart events={history} elapsedSec={elapsed} />
           <Insights events={history} />
-          <div className="mt-auto">
-            <Controls onNewSession={newSession} onEndSession={endSession} />
-          </div>
         </aside>
       </main>
     </div>
