@@ -4,7 +4,7 @@ import '@tensorflow/tfjs-backend-webgl';
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import { LungeAnalyzer, LungeEvent, FrameMetrics, Phase } from '../lib/LungeAnalyzer';
 import { drawPose } from '../lib/drawPose';
-import { Activity, RefreshCcw, ShieldAlert } from 'lucide-react';
+import { RefreshCcw, ShieldAlert } from 'lucide-react';
 
 interface CameraViewProps {
   mirrored: boolean;
@@ -12,9 +12,10 @@ interface CameraViewProps {
   resetFlag: number;
   onLunge: (e: LungeEvent) => void;
   onPhase: (p: Phase) => void;
+  onFrame?: (m: FrameMetrics) => void;
 }
 
-export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase }: CameraViewProps) {
+export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase, onFrame }: CameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -25,11 +26,11 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
   const dimsRef = useRef({ w: 0, h: 0 });
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [stage, setStage] = useState('Loading AI pose model…');
+  const [stage, setStage] = useState('Loading pose model…');
   const [errorText, setErrorText] = useState('');
   const [modelLoaded, setModelLoaded] = useState(false);
-  const [telemetry, setTelemetry] = useState<FrameMetrics | null>(null);
-  const [stageHint, setStageHint] = useState<'model' | 'none' | 'pose'>('model');
+  const [live, setLive] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
 
   useEffect(() => {
     analyzerRef.current = new LungeAnalyzer(onLunge, onPhase);
@@ -77,7 +78,6 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
           video.play();
           setStage('Ready.');
           setStatus('ready');
-          setStageHint('none');
           requestRef.current = requestAnimationFrame(loop);
         };
       } catch (err) {
@@ -123,9 +123,10 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
       }
 
       frameRef.current += 1;
-      if (frameRef.current % 5 === 0) {
-        setTelemetry(metrics);
-        setStageHint(metrics.hasPose ? 'pose' : 'none');
+      if (frameRef.current % 3 === 0) {
+        setLive(metrics.hasPose);
+        setPhase(metrics.phase);
+        onFrame?.(metrics);
       }
     } catch {
       // per-frame errors are ignored
@@ -140,133 +141,68 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
     window.location.reload();
   };
 
-  const overlayStroke = status === 'error' ? 'rgba(224,112,74,0.7)' : 'rgba(217,165,78,0.55)';
-
   return (
-    <div className="relative">
-      <div className="relative aspect-[4/3] md:aspect-video overflow-hidden rounded-[2px] border border-line bg-ink-950">
-        <div className="absolute inset-0 pointer-events-none" />
-
-        <div className="absolute inset-0" style={{ transform: mirrored ? 'scaleX(-1)' : 'none' }}>
-          <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
-          <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
-        </div>
-
-        {/* corner brackets */}
-        <div className="pointer-events-none absolute left-3 top-3 h-5 w-5 border-l border-t" style={{ borderColor: overlayStroke }} />
-        <div className="pointer-events-none absolute right-3 top-3 h-5 w-5 border-r border-t" style={{ borderColor: overlayStroke }} />
-        <div className="pointer-events-none absolute bottom-3 left-3 h-5 w-5 border-b border-l" style={{ borderColor: overlayStroke }} />
-        <div className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 border-b border-r" style={{ borderColor: overlayStroke }} />
-
-        {status === 'loading' && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-ink-950/85">
-            <div className="flex items-center gap-3">
-              <span className="h-2 w-2 rounded-full bg-brass-400 animate-pulse-glow" />
-              <ShieldAlert className="h-6 w-6 text-brass-400" />
-            </div>
-            <div className="text-center">
-              <p className="font-display text-lg italic text-steel-100">{stage}</p>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.25em] text-steel-500">
-                {modelLoaded ? 'switching to camera' : 'warming up moveNet'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-ink-950/90 px-8 text-center">
-            <ShieldAlert className="h-8 w-8 text-ember-400" />
-            <p className="max-w-sm text-sm text-steel-300">{errorText}</p>
-            <button
-              onClick={retry}
-              className="mt-1 inline-flex items-center gap-2 rounded-[2px] border border-line bg-ink-800 px-4 py-2 text-sm text-steel-100 transition-colors hover:border-brass-400/50 hover:text-brass-300"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Retry
-            </button>
-          </div>
-        )}
-
-        {status === 'ready' && stageHint === 'none' && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            <div className="rounded-[2px] border border-line bg-ink-950 px-4 py-2 text-center">
-              <p className="text-xs text-steel-300">Step into frame — full body, head to toe</p>
-            </div>
-          </div>
-        )}
-
-        <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-ember-500 opacity-60 animate-pulse-glow" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-ember-400" />
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-steel-300">Cam</span>
-        </div>
-
+    <div className="relative h-full w-full overflow-hidden bg-[#070a10]">
+      <div className="absolute inset-0 dot-grid opacity-40" />
+      <div
+        className="absolute inset-0"
+        style={{ transform: mirrored ? 'scaleX(-1)' : 'none' }}
+      >
+        <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
       </div>
 
-      <TelemetryStrip metrics={telemetry} />
-    </div>
-  );
-}
+      {/* frame + corners */}
+      <div className="pointer-events-none absolute inset-0 rounded-none ring-1 ring-inset ring-white/5" />
+      <div className="pointer-events-none absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-cyan-400/70" />
+      <div className="pointer-events-none absolute right-3 top-3 h-5 w-5 border-r-2 border-t-2 border-cyan-400/70" />
+      <div className="pointer-events-none absolute bottom-3 left-3 h-5 w-5 border-b-2 border-l-2 border-cyan-400/70" />
+      <div className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-cyan-400/70" />
 
-function gaugeColor(pct: number, goodAtPct: number) {
-  return pct >= goodAtPct ? 'bg-leaf-400' : pct >= goodAtPct * 0.6 ? 'bg-brass-400' : 'bg-ember-400';
-}
-
-function Gauge({
-  label,
-  value,
-  max,
-  unit,
-  goodAt,
-  format,
-}: {
-  label: string;
-  value: number | null;
-  max: number;
-  unit: string;
-  goodAt: number;
-  format: (v: number) => string;
-}) {
-  const pct = value === null ? 0 : Math.max(0, Math.min(100, (value / max) * 100));
-  return (
-    <div className="flex-1">
-      <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-steel-500">{label}</span>
-        <span className="font-mono text-[11px] tabular-nums text-steel-200">
-          {value === null ? '–' : `${format(value)}${unit}`}
-        </span>
-      </div>
-      <div className="mt-1.5 h-1 overflow-hidden rounded-[2px] bg-ink-800">
-        <div
-          className="h-full rounded-[2px] animate-meter transition-colors"
-          style={{ width: `${pct}%`, backgroundColor: gaugeColor(pct, (goodAt / max) * 100), transitionProperty: 'width, background-color' }}
+      {/* live cam tag */}
+      <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2 rounded-md border border-line bg-surface/80 px-2.5 py-1">
+        <span
+          className={`h-2 w-2 rounded-full ${live ? 'bg-success animate-live-pulse' : 'bg-warn animate-grain'}`}
         />
-      </div>
-    </div>
-  );
-}
-
-function TelemetryStrip({ metrics }: { metrics: FrameMetrics | null }) {
-  return (
-    <div className="u-card px-4 py-3">
-      <div className="flex items-center justify-between pb-2.5">
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-steel-500">
-          <Activity className="h-3.5 w-3.5 text-brass-400" />
-          Live telemetry
+        <span className="mono text-[10px] uppercase tracking-[0.25em] text-muted">
+          {live ? 'tracking' : phase === 'idle' ? 'no pose' : phase}
         </span>
-        <span className="font-mono text-[10px] text-steel-600">≈5 Hz</span>
       </div>
-      {!metrics || !metrics.hasPose ? (
-        <p className="font-mono text-[11px] tracking-wide text-steel-600">waiting for a full-body pose…</p>
-      ) : (
-        <div className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4 lg:grid-cols-5">
-          <Gauge label="Stance" value={metrics.stance} max={3} unit="T" goodAt={1.4} format={(v) => v.toFixed(2)} />
-          <Gauge label="Weapon arm" value={metrics.frontArmAngle} max={180} unit="°" goodAt={150} format={(v) => v.toFixed(0)} />
-          <Gauge label="Back leg" value={metrics.backLegAngle} max={180} unit="°" goodAt={162} format={(v) => v.toFixed(0)} />
-          <Gauge label="Front knee" value={metrics.frontKneeAngle} max={180} unit="°" goodAt={100} format={(v) => v.toFixed(0)} />
-          <Gauge label="Hip speed" value={metrics.hipSpeed} max={3} unit=" T/s" goodAt={1.5} format={(v) => (v > 0.1 ? v.toFixed(2) : '0.00')} />
+
+      {status === 'loading' && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-bg/85">
+          <div className="flex items-center gap-3">
+            <span className="h-2 w-2 rounded-full bg-accent animate-grain" />
+            <ShieldAlert className="h-6 w-6 text-accent-bright" />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-semibold tracking-tight text-primary">{stage}</p>
+            <p className="mono mt-1 text-[10px] uppercase tracking-[0.25em] text-dim">
+              {modelLoaded ? 'switching to camera' : 'warming up pose model'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-bg/90 px-8 text-center">
+          <ShieldAlert className="h-8 w-8 text-danger" />
+          <p className="max-w-sm text-sm text-muted">{errorText}</p>
+          <button
+            onClick={retry}
+            className="mt-1 inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm font-medium text-primary transition-colors hover:border-accent/60 hover:text-accent-bright"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {status === 'ready' && !live && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <div className="rounded-lg border border-line bg-surface/85 px-4 py-2 text-center">
+            <p className="text-xs text-muted">Step into frame — full body, head to toe</p>
+          </div>
         </div>
       )}
     </div>

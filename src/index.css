@@ -1,34 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
-  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;
 
-  --color-ink-950: #0b0a08;
-  --color-ink-900: #12100d;
-  --color-ink-850: #161310;
-  --color-ink-800: #1b1814;
-  --color-ink-700: #262219;
-  --color-line: #2b2620;
-  --color-line-soft: #211d18;
+  --color-bg: #0b0e14;
+  --color-surface: #141a24;
+  --color-surface-2: #0f1420;
+  --color-surface-3: #1a2230;
+  --color-line: #202836;
+  --color-line-soft: #1a212e;
 
-  --color-brass-300: #efce8f;
-  --color-brass-400: #d9a54e;
-  --color-brass-500: #c28a35;
-  --color-brass-600: #9c6d24;
+  --color-primary: #ffffff;
+  --color-muted: #9ca3af;
+  --color-dim: #4b5563;
 
-  --color-steel-100: #eceef1;
-  --color-steel-200: #d7dade;
-  --color-steel-300: #b6bac2;
-  --color-steel-400: #8e939e;
-  --color-steel-500: #6a6f79;
-  --color-steel-600: #4a4e57;
-
-  --color-leaf-400: #7fc496;
-  --color-leaf-500: #57a878;
-  --color-ember-400: #e0704a;
-  --color-ember-500: #cf5a33;
+  --color-accent: #2563eb;
+  --color-accent-bright: #3b82f6;
+  --color-success: #22c55e;
+  --color-warn: #f59e0b;
+  --color-danger: #ef4444;
+  --color-purple: #a855f7;
+  --color-cyan: #22d3ee;
 }
 
 @layer base {
@@ -39,121 +32,137 @@
     color-scheme: dark;
   }
   body {
-    background-color: var(--color-ink-950);
-    color: var(--color-steel-100);
+    background-color: var(--color-bg);
+    color: var(--color-primary);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow: hidden;
   }
   ::selection {
-    background: color-mix(in srgb, var(--color-brass-400) 35%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 40%, transparent);
     color: #fff;
+  }
+  /* slim dark scrollbars for internal column scroll */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
 @layer utilities {
-  .font-display {
-    font-family: var(--font-display);
-  }
-  .bg-piste {
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-    background-size: 72px 72px;
-  }
-  .grain::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 60;
-    opacity: 0.05;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  .text-balance {
-    text-wrap: balance;
-  }
-  /* utilitarian hairline surface: solid fill + 1px border, no blur */
-  .u-card {
-    border-radius: 2px;
+  .card {
+    border-radius: 12px;
     border: 1px solid var(--color-line);
-    background-color: var(--color-ink-900);
+    background-color: var(--color-surface);
+  }
+  .card-pad {
+    padding: 16px;
+  }
+  .mono {
+    font-family: var(--font-mono);
+  }
+  .dot-grid {
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-position: 0 0, 9px 9px;
+    background-size: 18px 18px;
+  }
+  .hairline-h::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 1px;
+    margin: 12px 0 0;
+    background: linear-gradient(to right, var(--color-line), transparent 85%);
   }
 }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
+@media (min-width: 1280px) {
+  body {
+    font-size: 14px;
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+@keyframes livePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
   }
-  to {
-    opacity: 1;
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
   }
 }
-
-@keyframes pulseGlow {
+@keyframes breathe {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.45;
+    opacity: 0.4;
   }
 }
-
-@keyframes meterFill {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes drawUp {
-  from {
-    stroke-dashoffset: var(--dash);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes ticker {
+@keyframes dotIn {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(6px) scale(0.9);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
+@keyframes drawStroke {
+  from {
+    stroke-dashoffset: var(--dash, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fillUp {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
 
-.animate-rise {
-  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+@keyframes growUp {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }
-.animate-fade {
-  animation: fadeIn 0.5s ease both;
+
+.animate-live-pulse {
+  animation: livePulse 1.6s ease-in-out infinite;
 }
-.animate-pulse-glow {
-  animation: pulseGlow 1.8s ease-in-out infinite;
+.animate-grain {
+  animation: breathe 1.6s ease-in-out infinite;
 }
-.animate-ticker {
-  animation: ticker 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+.animate-dot {
+  animation: dotIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.animate-meter {
-  transform-origin: left;
-  animation: meterFill 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+.animate-draw {
+  animation: drawStroke 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-grow-up {
+  transform-origin: bottom;
+  animation: growUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
