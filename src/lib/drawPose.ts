@@ -28,6 +28,7 @@ export function drawPose(
   metrics: FrameMetrics,
   w: number,
   h: number,
+  mirrored = false,
 ) {
   ctx.clearRect(0, 0, w, h);
   if (!pose || !pose.keypoints || !metrics.hasPose) return;
@@ -121,9 +122,15 @@ export function drawPose(
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.font = `10px 'IBM Plex Mono', monospace`;
+      // The camera view is flipped with CSS scaleX(-1) when mirrored, which would render this
+      // label backwards — draw it pre-flipped so it reads correctly on screen.
+      ctx.font = `10px 'JetBrains Mono', ui-monospace, monospace`;
       ctx.fillStyle = 'rgba(217,165,78,0.75)';
-      ctx.fillText(`stance ${metrics.stance.toFixed(2)}`, (ba.x + fa.x) / 2, ba.y - 8);
+      ctx.save();
+      ctx.translate((ba.x + fa.x) / 2, ba.y - 8);
+      if (mirrored) ctx.scale(-1, 1);
+      ctx.fillText(`stance ${metrics.stance.toFixed(2)}`, 0, 0);
+      ctx.restore();
     }
   }
 

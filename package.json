@@ -1,7 +1,10 @@
 {
-  "name": "react-vite-tailwind",
+  "name": "fencing-lunge-tracker",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Real-time \u00e9p\u00e9e lunge detector and technique coach \u2014 pose estimation running entirely in the browser.",
+  "author": "Anvith Yalamanchili",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

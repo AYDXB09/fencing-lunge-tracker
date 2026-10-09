@@ -1,6 +1,20 @@
 node_modules/
 dist/
+.vite/
+
+# local env / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# logs and dev output
+*.log
 dev-out.txt
 dev-err.txt
-*.log
+
+# OS / tooling
 .DS_Store
+Thumbs.db
+.claude/
+docs/internal/

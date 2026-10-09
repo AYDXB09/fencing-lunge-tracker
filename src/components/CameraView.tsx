@@ -119,7 +119,7 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
           canvas.height = video.videoHeight;
           dimsRef.current = { w: video.videoWidth, h: video.videoHeight };
         }
-        drawPose(ctx, poses[0] ?? null, metrics, canvas.width, canvas.height);
+        drawPose(ctx, poses[0] ?? null, metrics, canvas.width, canvas.height, mirrored);
       }
 
       frameRef.current += 1;
