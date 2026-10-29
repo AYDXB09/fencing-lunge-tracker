@@ -110,7 +110,10 @@ export function CameraView({ mirrored, userHeightCm, resetFlag, onLunge, onPhase
     }
 
     try {
-      const poses = await detector.estimatePoses(video, { maxPoses: 1, flipHorizontal: false });
+      // Front-facing (selfie) camera is mirrored; flip detection input so the
+      // pose estimate lands on the same side of the frame as the person, not
+      // reflected opposite to them.
+      const poses = await detector.estimatePoses(video, { maxPoses: 1, flipHorizontal: mirrored });
       const metrics = analyzer.analyzeFrame(poses, performance.now());
       const ctx = canvas.getContext('2d');
       if (ctx) {
